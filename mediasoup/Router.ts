@@ -13,10 +13,10 @@ import { IWebRtcTransport } from './WebRtcTransport';
 
 export interface IRouter {
   /**
+   * @private
    *
-   * @param undefined
-   * @param undefined
-   * @param channel}
+   * @emits workerclose
+   * @emits @close
    */
   new ({ internal, data, channel }: { internal: object; data: object; channel: IChannel });
 
@@ -35,6 +35,16 @@ export interface IRouter {
   closed: boolean;
 
   /**
+   * Observer.
+   *
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits {transport: Transport} newtransport
+   */
+  observer: any;
+
+  /**
    * Whether the Router is closed.
    *
    * @type {RTCRtpCapabilities}
@@ -46,12 +56,12 @@ export interface IRouter {
    */
   close(): void;
 
-  /**
-   * Worker was closed.
-   *
-   * @private
-   */
-  workerClosed(): void;
+  // /**
+  //  * Worker was closed.
+  //  *
+  //  * @private
+  //  */
+  // workerClosed(): void;
 
   /**
    * Dump Router.
@@ -59,9 +69,8 @@ export interface IRouter {
    * @private
    *
    * @returns {Object}
-   * @return
    */
-  dump(): any;
+  dump(): Promise<object>;
 
   /**
    * Create a WebRtcTransport.
@@ -84,19 +93,7 @@ export interface IRouter {
    * @param {Object} [appData={}] - Custom app data.
    *
    * @async
-   * @returns {WebRtcTransport}
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
-   * @return
+   * @returns {IWebRtcTransport & ITransport}
    */
   createWebRtcTransport({
     listenIps,
@@ -143,16 +140,7 @@ export interface IRouter {
    * @param {Object} [appData={}] - Custom app data.
    *
    * @async
-   * @returns {PlainRtpTransport}
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
-   * @return
+   * @returns {IPlainRtpTransport & ITransport}
    */
   createPlainRtpTransport({
     listenIp,
@@ -186,13 +174,7 @@ export interface IRouter {
    * @param {Object} [appData={}] - Custom app data.
    *
    * @async
-   * @returns {PipeTransport}
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
-   * @return
+   * @returns {IPipeTransport & ITransport}
    */
   createPipeTransport({
     listenIp,
@@ -224,13 +206,6 @@ export interface IRouter {
    * @returns {Object} - Contains `pipeConsumer` {Consumer} created in the current
    *   Router and `pipeProducer` {Producer} created in the destination Router, or
    *   `pipeDataConsumer` {DataConsumer} and `pipeDataProducer` {DataProducer}.
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param numSctpStreams}
-   * @return
    */
   pipeToRouter({
     producerId,
@@ -264,10 +239,6 @@ export interface IRouter {
    *
    * @async
    * @returns {AudioLevelObserver}
-   * @param undefined
-   * @param undefined
-   * @param interval}
-   * @return
    */
   createAudioLevelObserver({
     maxEntries,
@@ -286,9 +257,6 @@ export interface IRouter {
    * @param {RTCRtpCapabilities} rtpCapabilities - Remote RTP capabilities.
    *
    * @returns {Boolean}
-   * @param undefined
-   * @param rtpCapabilities}
-   * @return
    */
   canConsume({ producerId, rtpCapabilities }: { producerId: string; rtpCapabilities: RTCRtpCapabilities }): boolean;
 }

@@ -4,15 +4,39 @@ import { IConsumer } from './Consumer';
 
 export interface IPipeTransport {
   /**
-   *
-   * @param params
+   * @private
    */
   new (params: any);
+
+  /**
+   * @type {Object}
+   */
+  tuple: string;
+
+  /**
+   * @type {Object}
+   */
+  sctpParameters: any;
 
   /**
    * @type {String}
    */
   sctpState: string;
+
+  /**
+   * Observer.
+   *
+   * @override
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits {producer: Producer} newproducer
+   * @emits {consumer: Consumer} newconsumer
+   * @emits {producer: DataProducer} newdataproducer
+   * @emits {consumer: DataConsumer} newdataconsumer
+   * @emits {sctpState: String} sctpstatechange
+   */
+  observer: any;
 
   /**
    * Close the PlainRtpTransport.
@@ -21,13 +45,13 @@ export interface IPipeTransport {
    */
   close(): void;
 
-  /**
-   * Router was closed.
-   *
-   * @private
-   * @override
-   */
-  routerClosed(): void;
+  // /**
+  //  * Router was closed.
+  //  *
+  //  * @private
+  //  * @override
+  //  */
+  // routerClosed(): void;
 
   /**
    * Provide the PipeTransport remote parameters.
@@ -37,11 +61,8 @@ export interface IPipeTransport {
    *
    * @async
    * @override
-   * @param undefined
-   * @param port}
    */
-  // tslint:disable-next-line: variable-name
-  connect({ ip, port }: { ip: string; port: number }): void;
+  connect({ ip, port }: { ip: string; port: number }): Promise<void>;
 
   /**
    * Create a pipe Consumer.
@@ -52,15 +73,6 @@ export interface IPipeTransport {
    * @async
    * @override
    * @returns {Consumer}
-   * @param undefined
-   * @param appData}
-   * @return
    */
   consume({ producerId, appData }: { producerId: string; appData: object }): Promise<IConsumer>;
-
-  /**
-   * @private
-   * @override
-   */
-  _handleWorkerNotifications(): void;
 }

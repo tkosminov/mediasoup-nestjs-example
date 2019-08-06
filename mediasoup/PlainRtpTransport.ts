@@ -4,8 +4,9 @@ import { IConsumer } from './Consumer';
 
 export interface IPlainRtpTransport {
   /**
+   * @private
    *
-   * @param params
+   * @emits {sctpState: String} sctpstatechange
    */
   new (params: any);
 
@@ -30,19 +31,34 @@ export interface IPlainRtpTransport {
   sctpState: string;
 
   /**
+   * Observer.
+   *
+   * @override
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits {producer: Producer} newproducer
+   * @emits {consumer: Consumer} newconsumer
+   * @emits {producer: DataProducer} newdataproducer
+   * @emits {consumer: DataConsumer} newdataconsumer
+   * @emits {sctpState: String} sctpstatechange
+   */
+  observer: any;
+
+  /**
    * Close the PlainRtpTransport.
    *
    * @override
    */
   close(): void;
 
-  /**
-   * Router was closed.
-   *
-   * @private
-   * @override
-   */
-  routerClosed(): void;
+  // /**
+  //  * Router was closed.
+  //  *
+  //  * @private
+  //  * @override
+  //  */
+  // routerClosed(): void;
 
   /**
    * Provide the PlainRtpTransport remote parameters.
@@ -53,11 +69,8 @@ export interface IPlainRtpTransport {
    *
    * @async
    * @override
-   * @param undefined
-   * @param undefined
-   * @param rtcpPort}
    */
-  connect({ ip, port, rtcpPort }: { ip: string; port: number; rtcpPort: number }): void;
+  connect({ ip, port, rtcpPort }: { ip: string; port: number; rtcpPort: number }): Promise<void>;
 
   /**
    * Override Transport.consume() method to reject it if multiSource is set.
@@ -65,14 +78,6 @@ export interface IPlainRtpTransport {
    * @async
    * @override
    * @returns {Consumer}
-   * @param {...params}
-   * @return
    */
   consume({ ...params }: any): Promise<IConsumer>;
-
-  /**
-   * @private
-   * @override
-   */
-  _handleWorkerNotifications(): void;
 }

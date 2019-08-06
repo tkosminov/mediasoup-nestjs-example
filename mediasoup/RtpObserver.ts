@@ -5,10 +5,11 @@ import { IProducer } from './Producer';
 
 export interface IRtpObserver {
   /**
+   * @private
+   * @interface
    *
-   * @param undefined
-   * @param undefined
-   * @param getProducerById}
+   * @emits routerclose
+   * @emits @close
    */
   new ({
     internal,
@@ -48,27 +49,27 @@ export interface IRtpObserver {
    */
   close(): void;
 
-  /**
-   * Router was closed.
-   *
-   * @private
-   * @virtual
-   */
-  routerClosed(): void;
+  // /**
+  //  * Router was closed.
+  //  *
+  //  * @private
+  //  * @virtual
+  //  */
+  // routerClosed(): void;
 
   /**
    * Pause the RtpObserver.
    *
    * @async
    */
-  pause(): void;
+  pause(): Promise<void>;
 
   /**
    * Resume the RtpObserver.
    *
    * @async
    */
-  resume(): void;
+  resume(): Promise<void>;
 
   /**
    * Add a Producer to the RtpObserver.
@@ -76,9 +77,8 @@ export interface IRtpObserver {
    * @param {String} producerId - The id of a Producer.
    *
    * @async
-   * @param {producerId}
    */
-  addProducer({ producerId }: { producerId: string }): void;
+  addProducer({ producerId }: { producerId: string }): Promise<void>;
 
   /**
    * Remove a Producer from the RtpObserver.
@@ -86,13 +86,6 @@ export interface IRtpObserver {
    * @param {String} producerId - The id of a Producer.
    *
    * @async
-   * @param {producerId}
    */
-  removeProducer({ producerId }: { producerId: string }): void;
-
-  /**
-   * @private
-   * @abstract
-   */
-  _handleWorkerNotifications(): void;
+  removeProducer({ producerId }: { producerId: string }): Promise<void>;
 }

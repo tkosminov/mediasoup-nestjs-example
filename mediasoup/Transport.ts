@@ -8,14 +8,15 @@ import { IProducer } from './Producer';
 
 export interface ITransport {
   /**
+   * @private
+   * @interface
    *
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param getDataProducerById}
+   * @emits routerclose
+   * @emits @close
+   * @emits @newproducer
+   * @emits @producerclose
+   * @emits @newdataproducer
+   * @emits @dataproducerclose
    */
   new ({
     internal,
@@ -50,11 +51,24 @@ export interface ITransport {
   closed: boolean;
 
   /**
-   * Whether the Transport is closed.
+   * App custom data.
    *
    * @type {object}
    */
   appData: object;
+
+  /**
+   * Observer.
+   *
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits {producer: Producer} newproducer
+   * @emits {consumer: Consumer} newconsumer
+   * @emits {producer: DataProducer} newdataproducer
+   * @emits {consumer: DataConsumer} newdataconsumer
+   */
+  observer: any;
 
   /**
    * Close the Transport.
@@ -63,22 +77,21 @@ export interface ITransport {
    */
   close(): void;
 
-  /**
-   * Router was closed.
-   *
-   * @private
-   * @virtual
-   */
-  routerClosed(): void;
+  // /**
+  //  * Router was closed.
+  //  *
+  //  * @private
+  //  * @virtual
+  //  */
+  // routerClosed(): void;
 
   /**
    * Dump Transport.
    *
    * @async
    * @returns {Object}
-   * @return
    */
-  dump(): any;
+  dump(): Promise<object>;
 
   /**
    * Get Transport stats.
@@ -94,7 +107,7 @@ export interface ITransport {
    * @async
    * @abstract
    */
-  connect(): void;
+  connect(): Promise<void>;
 
   /**
    * Create a Producer.
@@ -107,12 +120,6 @@ export interface ITransport {
    *
    * @async
    * @returns {Producer}
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
-   * @return
    */
   produce({
     id,
@@ -140,12 +147,6 @@ export interface ITransport {
    * @async
    * @virtual
    * @returns {Consumer}
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
-   * @return
    */
   consume({
     producerId,
@@ -173,12 +174,6 @@ export interface ITransport {
    *
    * @async
    * @returns {DataProducer}
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
-   * @return
    */
   produceData({
     id,
@@ -203,21 +198,6 @@ export interface ITransport {
    * @async
    * @virtual
    * @returns {DataConsumer}
-   * @param undefined
-   * @param appData}
-   * @return
    */
   consumeData({ dataProducerId, appData }: { dataProducerId: string; appData: {} }): Promise<IDataConsumer>;
-
-  /**
-   * @private
-   * @abstract
-   */
-  _handleWorkerNotifications(): void;
-
-  /**
-   *
-   * @return
-   */
-  _getNextSctpStreamId(): number;
 }

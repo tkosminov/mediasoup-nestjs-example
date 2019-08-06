@@ -2,14 +2,10 @@
 
 export interface IAudioLevelObserver {
   /**
+   * @private
    *
-   * @param {...params}
+   * @emits {volumes: Array<Object<producer: Producer, volume: Number>>} volumes
+   * @emits silence
    */
   new ({ ...params }: any);
-
-  /**
-   * @private
-   * @override
-   */
-  _handleWorkerNotifications(): void;
 }

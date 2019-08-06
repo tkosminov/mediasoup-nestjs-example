@@ -4,13 +4,12 @@ import { IRouter } from './Router';
 
 export interface IWorker {
   /**
+   * @private
    *
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param dtlsPrivateKeyFile}
+   * @emits died
+   * @emits @succeed
+   * @emits @settingserror
+   * @emits @failure
    */
   new (
     logLevel: string,
@@ -36,6 +35,16 @@ export interface IWorker {
   closed: boolean;
 
   /**
+   * Observer.
+   *
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits {router: Router} newrouter
+   */
+  observer: any;
+
+  /**
    * Close the Worker.
    */
   close(): void;
@@ -45,21 +54,18 @@ export interface IWorker {
    *
    * @async
    * @returns {Object}
-   * @return
    */
-  dump(): any;
+  dump(): Promise<object>;
 
   /**
-   * 	 * Update settings.
-   * 	 *
-   * 	 * @param {String} [logLevel]
-   *    * @param {Array<String>} [logTags]
-   *    *
-   * 	 * @async
-   * @param undefined
-   * @param logTags}
+   * Update settings.
+   *
+   * @param {String} [logLevel]
+   * @param {Array<String>} [logTags]
+   *
+   * @async
    */
-  updateSettings(logLevel: string, logTags: string[]): void;
+  updateSettings(logLevel: string, logTags: string[]): Promise<void>;
 
   /**
    * Create a Router.
@@ -68,8 +74,6 @@ export interface IWorker {
    *
    * @async
    * @returns {Router}
-   * @param {mediaCodecs}
-   * @return
    */
   createRouter({ mediaCodecs }: { mediaCodecs: RTCRtpCodecCapability[] }): Promise<IRouter>;
 }

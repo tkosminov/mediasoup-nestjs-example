@@ -4,14 +4,16 @@ import { IChannel } from './Channel';
 
 export interface IConsumer {
   /**
+   * @private
    *
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param score
+   * @emits transportclose
+   * @emits producerclose
+   * @emits producerpause
+   * @emits producerresume
+   * @emits {consumer: Number, producerScore: Number} score
+   * @emits {spatialLayer: Number, temporalLayer: Number|Null} layerschange
+   * @emits @close
+   * @emits @producerclose
    */
   new ({
     internal,
@@ -60,6 +62,13 @@ export interface IConsumer {
   kind: string;
 
   /**
+   * RTP parameters.
+   *
+   * @return {RTCRtpParameters}
+   */
+  rtpParameters: RTCRtpParameters;
+
+  /**
    * Associated Producer type.
    *
    * @type {String} - It can be 'simple', 'simulcast' or 'svc'.
@@ -81,32 +90,58 @@ export interface IConsumer {
   producerPaused: boolean;
 
   /**
-   * RTP parameters.
+   * Consumer score with consumer and producerScore keys.
    *
-   * @return {RTCRtpParameters}
+   * @return {Object}
    */
-  rtpParameters: RTCRtpParameters;
+  score: object;
+
+  /**
+   * Current video layers.
+   *
+   * @return {Object}
+   */
+  currentLayers: object;
+
+  /**
+   * App custom data.
+   *
+   * @return {Object}
+   */
+  appData: object;
+
+  /**
+   * Observer.
+   *
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits pause
+   * @emits resume
+   * @emits {consumer: Number, producerScore: Number} score
+   * @emits {spatialLayer: Number, temporalLayer: Number|Null} layerschange
+   */
+  observer: any;
 
   /**
    * Close the Consumer.
    */
   close(): void;
 
-  /**
-   * Transport was closed.
-   *
-   * @private
-   */
-  transportClosed(): void;
+  // /**
+  //  * Transport was closed.
+  //  *
+  //  * @private
+  //  */
+  // transportClosed(): void;
 
   /**
    * Dump Consumer.
    *
    * @async
    * @returns {Object}
-   * @return
    */
-  dump(): any;
+  dump(): Promise<object>;
 
   /**
    * Get Consumer stats.
@@ -114,40 +149,33 @@ export interface IConsumer {
    * @async
    * @returns {Array<Object>}
    */
-  getStats(): void;
+  getStats(): Promise<object[]>;
 
   /**
    * Pause the Consumer.
    *
    * @async
    */
-  pause(): void;
+  pause(): Promise<void>;
 
   /**
    * Resume the Consumer.
    *
    * @async
    */
-  resume(): void;
+  resume(): Promise<void>;
 
   /**
    * Set preferred video layers.
    *
    * @async
-   * @param undefined
-   * @param temporalLayer}
    */
-  setPreferredLayers({ spatialLayer, temporalLayer }: { spatialLayer: any; temporalLayer: any }): void;
+  setPreferredLayers({ spatialLayer, temporalLayer }: { spatialLayer: any; temporalLayer: any }): Promise<void>;
 
   /**
    * Request a key frame to the Producer.
    *
    * @async
    */
-  requestKeyFrame(): void;
-
-  /**
-   * @private
-   */
-  _handleWorkerNotifications(): void;
+  requestKeyFrame(): Promise<void>;
 }

@@ -39,8 +39,7 @@
     "rimraf": "^2.6.2",
     "rxjs": "^6.5.2",
     "socket.io": "^2.2.0",
-    "swagger-ui-express": "^4.0.7",
-    "tern": "^0.24.1"
+    "swagger-ui-express": "^4.0.7"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",

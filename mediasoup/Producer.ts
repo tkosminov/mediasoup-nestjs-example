@@ -4,12 +4,12 @@ import { IChannel } from './Channel';
 
 export interface IProducer {
   /**
+   * @private
    *
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param paused}
+   * @emits transportclose
+   * @emits {Array<Object>} score
+   * @emits {Object} videoorientationchange
+   * @emits @close
    */
   new ({
     internal,
@@ -47,11 +47,26 @@ export interface IProducer {
   kind: string;
 
   /**
+   * RTP parameters.
+   *
+   * @type {RTCRtpParameters}
+   */
+  rtpParameters: RTCRtpParameters;
+
+  /**
    * Producer type.
    *
    * @type {String} - It can be 'simple', 'simulcast' or 'svc'.
    */
   type: string;
+
+  /**
+   * Consumable RTP parameters.
+   *
+   * @private
+   * @type {RTCRtpParameters}
+   */
+  consumableRtpParameters: RTCRtpParameters;
 
   /**
    * Whether the Producer is paused.
@@ -65,33 +80,47 @@ export interface IProducer {
    *
    * @type {Array<Object>}
    */
-  score: any[];
+  score: object[];
 
   /**
+   * App custom data.
    *
+   * @type {Object}
    */
-  consumableRtpParameters: any;
+  appData: object;
+
+  /**
+   * Observer.
+   *
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits pause
+   * @emits resume
+   * @emits {Array<Object>} score
+   * @emits {Object} videoorientationchange
+   */
+  observer: any;
 
   /**
    * Close the Producer.
    */
   close(): void;
 
-  /**
-   * Transport was closed.
-   *
-   * @private
-   */
-  transportClosed(): void;
+  // /**
+  //  * Transport was closed.
+  //  *
+  //  * @private
+  //  */
+  // transportClosed(): void;
 
   /**
    * Dump Producer.
    *
    * @async
    * @returns {Object}
-   * @return
    */
-  dump(): any;
+  dump(): Promise<object>;
 
   /**
    * Get Producer stats.
@@ -106,17 +135,12 @@ export interface IProducer {
    *
    * @async
    */
-  pause(): void;
+  pause(): Promise<void>;
 
   /**
    * Resume the Producer.
    *
    * @async
    */
-  resume(): void;
-
-  /**
-   * @private
-   */
-  _handleWorkerNotifications(): void;
+  resume(): Promise<void>;
 }

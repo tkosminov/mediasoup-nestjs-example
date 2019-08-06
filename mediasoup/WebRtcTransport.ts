@@ -2,8 +2,12 @@
 
 export interface IWebRtcTransport {
   /**
+   * @private
    *
-   * @param params
+   * @emits {iceState: String} icestatechange
+   * @emits {iceSelectedTuple: Object} iceselectedtuplechange
+   * @emits {dtlsState: String} dtlsstatechange
+   * @emits {sctpState: String} sctpstatechange
    */
   new (params: any);
 
@@ -58,19 +62,37 @@ export interface IWebRtcTransport {
   sctpState: string;
 
   /**
+   * Observer.
+   *
+   * @override
+   * @type {EventEmitter}
+   *
+   * @emits close
+   * @emits {producer: Producer} newproducer
+   * @emits {consumer: Consumer} newconsumer
+   * @emits {producer: DataProducer} newdataproducer
+   * @emits {consumer: DataConsumer} newdataconsumer
+   * @emits {iceState: String} icestatechange
+   * @emits {iceSelectedTuple: Object} iceselectedtuplechange
+   * @emits {dtlsState: String} dtlsstatechange
+   * @emits {sctpState: String} sctpstatechange
+   */
+  observer: any;
+
+  /**
    * Close the WebRtcTransport.
    *
    * @override
    */
   close(): void;
 
-  /**
-   * Router was closed.
-   *
-   * @private
-   * @override
-   */
-  routerClosed(): void;
+  // /**
+  //  * Router was closed.
+  //  *
+  //  * @private
+  //  * @override
+  //  */
+  // routerClosed(): void;
 
   /**
    * Provide the WebRtcTransport remote parameters.
@@ -79,7 +101,6 @@ export interface IWebRtcTransport {
    *
    * @async
    * @override
-   * @param {dtlsParameters}
    */
   connect({ dtlsParameters }: { dtlsParameters: RTCDtlsParameters }): Promise<void>;
 
@@ -89,22 +110,14 @@ export interface IWebRtcTransport {
    * @param {Number} bitrate - In bps.
    *
    * @async
-   * @param bitrate
    */
-  setMaxIncomingBitrate(bitrate: number): void;
+  setMaxIncomingBitrate(bitrate: number): Promise<void>;
 
   /**
    * Restart ICE.
    *
    * @async
    * @returns {RTCIceParameters}
-   * @return
    */
   restartIce(): Promise<RTCIceParameters>;
-
-  /**
-   * @private
-   * @override
-   */
-  _handleWorkerNotifications(): void;
 }

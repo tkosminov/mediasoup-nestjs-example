@@ -20,5 +20,5 @@ export interface IEnhancedEventEmitter {
    * @param ...args
    * @return
    */
-  safeEmitAsPromise(event: any, ...args: any): /* EnhancedEventEmitter.prototype.+Promise */ any;
+  safeEmitAsPromise(event: any, ...args: any): Promise<void>;
 }

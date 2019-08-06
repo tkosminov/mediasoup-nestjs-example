@@ -4,11 +4,12 @@ import { IChannel } from './Channel';
 
 export interface IDataConsumer {
   /**
+   * @private
    *
-   * @param undefined
-   * @param undefined
-   * @param undefined
-   * @param appData}
+   * @emits transportclose
+   * @emits dataproducerclose
+   * @emits @close
+   * @emits @dataproducerclose
    */
   new ({ internal, data, channel, appData }: { internal: object; data: object; channel: IChannel; appData: object });
 
@@ -34,25 +35,61 @@ export interface IDataConsumer {
   closed: boolean;
 
   /**
+   * SCTP stream parameters.
+   *
+   * @type {RTCSctpStreamParameters}
+   */
+  sctpStreamParameters: any;
+
+  /**
+   * DataChannel label.
+   *
+   * @returns {String}
+   */
+  label: string;
+
+  /**
+   * DataChannel protocol.
+   *
+   * @returns {String}
+   */
+  protocol: string;
+
+  /**
+   * App custom data.
+   *
+   * @returns {Object}
+   */
+  appData: object;
+
+  /**
+   * Observer.
+   *
+   * @type {EventEmitter}
+   *
+   * @emits close
+   */
+  observer: any;
+
+  /**
    * Close the DataConsumer.
    */
   close(): void;
 
-  /**
-   * Transport was closed.
-   *
-   * @private
-   */
-  transportClosed(): void;
+  // /**
+  //  * Transport was closed.
+  //  *
+  //  * @private
+  //  */
+  // transportClosed(): void;
 
   /**
    * Dump DataConsumer.
    *
    * @async
    * @returns {Object}
-   * @return
    */
-  dump(): any;
+  dump(): Promise<object>;
 
   /**
    * Get DataConsumer stats.
@@ -61,9 +98,4 @@ export interface IDataConsumer {
    * @returns {Array<Object>}
    */
   getStats(): Promise<object[]>;
-
-  /**
-   * @private
-   */
-  _handleWorkerNotifications(): void;
 }
