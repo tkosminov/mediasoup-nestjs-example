@@ -47,18 +47,9 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Test
+## Client
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
+[Use it](https://github.com/TimurRK/mediasoup-angular-example)
 
 ## Support
 
