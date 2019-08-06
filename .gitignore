@@ -1,0 +1,8 @@
+node_modules
+
+src/graphql/schema.ts
+src/graphql/schema.graphql
+
+dist
+
+.idea

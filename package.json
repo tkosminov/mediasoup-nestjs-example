@@ -1,0 +1,82 @@
+{
+  "name": "mediasoup-nestjs-example",
+  "version": "0.0.0",
+  "description": "NestJS Mediasoup Example",
+  "author": "t.kosminov",
+  "license": "MIT",
+  "scripts": {
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "ts-node --files -r tsconfig-paths/register src/main.ts",
+    "start:debug": "nodemon --config nodemon-debug.json",
+    "start:dev": "nodemon",
+    "start:build": "NODE_ENV=development node dist/src/main.js",
+    "start:beta": "NODE_ENV=beta node dist/src/main.js",
+    "start:prod": "NODE_ENV=production node dist/src/main.js",
+    "lint": "tslint -p tsconfig.json -c tslint.json",
+    "lint-fix": "npm run lint -- --fix"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
+  },
+  "dependencies": {
+    "@nestjs/common": "^6.5.3",
+    "@nestjs/core": "^6.5.3",
+    "@nestjs/platform-express": "^6.5.3",
+    "@nestjs/platform-socket.io": "^6.5.3",
+    "@nestjs/swagger": "^3.1.0",
+    "@nestjs/websockets": "^6.5.3",
+    "class-transformer": "^0.2.3",
+    "class-validator": "^0.9.1",
+    "config": "^3.2.2",
+    "cookie-parser": "^1.4.4",
+    "helmet": "^3.20.0",
+    "mediasoup": "^3.2.4",
+    "query-string": "^6.8.2",
+    "reflect-metadata": "^0.1.13",
+    "rimraf": "^2.6.2",
+    "rxjs": "^6.5.2",
+    "socket.io": "^2.2.0",
+    "swagger-ui-express": "^4.0.7",
+    "tern": "^0.24.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@types/config": "0.0.34",
+    "@types/cookie-parser": "^1.4.1",
+    "@types/cors": "^2.8.5",
+    "@types/express": "^4.17.0",
+    "@types/helmet": "0.0.42",
+    "@types/node": "^11.13.18",
+    "@types/query-string": "^6.3.0",
+    "@types/socket.io": "^2.1.2",
+    "husky": "^2.7.0",
+    "nodemon": "^1.19.1",
+    "prettier": "^1.18.2",
+    "ts-loader": "^4.4.2",
+    "ts-node": "^8.3.0",
+    "tsconfig-paths": "^3.8.0",
+    "tslint": "5.12.1",
+    "tslint-clean-code": "^0.2.9",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "tslint-plugin-prettier": "^2.0.1",
+    "typescript": "^3.5.3"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".spec.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  }
+}
