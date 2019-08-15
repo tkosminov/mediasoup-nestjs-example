@@ -123,6 +123,8 @@ export interface IConsumer {
    */
   observer: any;
 
+  on(type: any, listener: (...params: any) => Promise<void> | void): Promise<void> | void;
+
   /**
    * Close the Consumer.
    */

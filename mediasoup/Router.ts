@@ -6,6 +6,7 @@ import { IDataProducer } from './DataProducer';
 import { IPipeTransport } from './PipeTransport';
 import { IPlainRtpTransport } from './PlainRtpTransport';
 import { IProducer } from './Producer';
+import { IRtpObserver } from './RtpObserver';
 import { ITransport } from './Transport';
 import { IWebRtcTransport } from './WebRtcTransport';
 
@@ -238,7 +239,7 @@ export interface IRouter {
    * @param {Number} [interval=1000] - Interval in ms for checking audio volumes.
    *
    * @async
-   * @returns {AudioLevelObserver}
+   * @returns {AudioLevelObserver & IRtpObserver}
    */
   createAudioLevelObserver({
     maxEntries,
@@ -248,7 +249,7 @@ export interface IRouter {
     maxEntries: number;
     threshold: number;
     interval: number;
-  }): Promise<IAudioLevelObserver>;
+  }): Promise<IAudioLevelObserver & IRtpObserver>;
 
   /**
    * Check whether the given RTP capabilities can consume the given Producer.
