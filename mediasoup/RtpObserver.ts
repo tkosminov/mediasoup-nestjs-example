@@ -42,6 +42,8 @@ export interface IRtpObserver {
    */
   paused: boolean;
 
+  on(type: any, listener: (...params: any) => Promise<void> | void): Promise<void> | void;
+
   /**
    * Close the RtpObserver.
    *

@@ -155,7 +155,7 @@
       }
     ],
     "no-any": true,
-    "no-unsafe-any": true,
+    "no-unsafe-any": false,
     "only-arrow-functions": false,
     "variable-name": [
       true,
@@ -172,7 +172,7 @@
     "no-flag-args": true,
     "no-for-each-push": true,
     "no-feature-envy": [
-      true,
+      false,
       1,
       [
         "_"

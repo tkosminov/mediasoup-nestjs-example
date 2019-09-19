@@ -44,7 +44,7 @@ export interface IProducer {
    *
    * @type {String}
    */
-  kind: string;
+  kind: 'audio' | 'video';
 
   /**
    * RTP parameters.
@@ -58,7 +58,7 @@ export interface IProducer {
    *
    * @type {String} - It can be 'simple', 'simulcast' or 'svc'.
    */
-  type: string;
+  type: 'simple' | 'simulcast' | 'svc';
 
   /**
    * Consumable RTP parameters.

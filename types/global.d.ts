@@ -51,6 +51,7 @@ interface IMediasoupWebRtcTransport {
 }
 
 interface IMediasoupSettings {
+  readonly workerPool: number;
   readonly worker: IMediasoupWorkerSettings;
   readonly router: { mediaCodecs: IMediasoupMediacodecSettings[] }
   readonly webRtcTransport: IMediasoupWebRtcTransport;

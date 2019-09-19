@@ -59,7 +59,7 @@ export interface IConsumer {
    *
    * @type {String}
    */
-  kind: string;
+  kind: 'audio' | 'video';
 
   /**
    * RTP parameters.
@@ -73,7 +73,7 @@ export interface IConsumer {
    *
    * @type {String} - It can be 'simple', 'simulcast' or 'svc'.
    */
-  type: string;
+  type: 'simple' | 'simulcast' | 'svc';
 
   /**
    * Whether the Consumer is paused.

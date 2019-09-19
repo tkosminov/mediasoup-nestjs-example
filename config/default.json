@@ -37,6 +37,7 @@
     ]
   },
   "MEDIASOUP_SETTINGS": {
+    "workerPool": 3,
     "worker": {
       "rtcMinPort": 10000,
       "rtcMaxPort": 10100,
