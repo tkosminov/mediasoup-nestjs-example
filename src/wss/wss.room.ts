@@ -23,8 +23,8 @@ export class WssRoom {
   constructor(
     private worker: IWorker,
     public workerIndex: number,
-    public readonly session_id: string,
-    public readonly logger: LoggerService,
+    private readonly session_id: string,
+    private readonly logger: LoggerService,
     private readonly wssServer: io.Server
   ) {}
 
@@ -268,23 +268,13 @@ export class WssRoom {
     }
   }
 
-  public async speakMsClient(user_id: string, msg: IMsMessage) {
-    try {
-      this.logger.info(`${user_id} speak (ms) in room ${this.session_id}`);
-
-      return await this.commit(msg, user_id);
-    } catch (error) {
-      this.logger.error(error.message, error.stack, 'WssRoom - speakMsClient');
-    }
-  }
-
   /**
    * Обрабатывает сообщение.
-   * @param {IMsMessage} msg сообщение
    * @param {string} user_id автор сообщения
+   * @param {IMsMessage} msg сообщение
    * @returns {Promise<object | boolean>} Promise<object | boolean>
    */
-  public async commit(msg: IMsMessage, user_id: string): Promise<object | boolean> {
+  public async speakMsClient(user_id: string, msg: IMsMessage): Promise<object | boolean> {
     try {
       switch (msg.action) {
         case 'getRouterRtpCapabilities':

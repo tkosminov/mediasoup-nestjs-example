@@ -4,6 +4,10 @@
   "description": "NestJS Mediasoup Example",
   "author": "t.kosminov",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TimurRK/mediasoup-nestjs-example.git"
+  },
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\"",
