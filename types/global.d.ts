@@ -47,6 +47,8 @@ interface IMediasoupListenIds {
 interface IMediasoupWebRtcTransport {
   readonly listenIps: IMediasoupListenIds[];
   readonly maxIncomingBitrate: number;
+  readonly minIncomingBitrate: number;
+  readonly factorIncomingBitrate: number;
   readonly initialAvailableOutgoingBitrate: number;
 }
 

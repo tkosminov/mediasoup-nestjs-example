@@ -65,6 +65,22 @@ export class WssRoom {
     return Array.from(this.clients.keys());
   }
 
+  get producerIds(): string[] {
+    return Array.from(this.clients.values())
+      .filter(c => {
+        if (c.media) {
+          if (c.media.producerVideo || c.media.producerAudio) {
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      })
+      .map(c => c.id);
+  }
+
   get getRouterRtpCapabilities(): RTCRtpCapabilities {
     return this.router.rtpCapabilities;
   }
@@ -334,7 +350,7 @@ export class WssRoom {
 
       const user = this.clients.get(user_id);
 
-      const { maxIncomingBitrate, initialAvailableOutgoingBitrate } = mediasoupSettings.webRtcTransport;
+      const { initialAvailableOutgoingBitrate } = mediasoupSettings.webRtcTransport;
 
       const transport = await this.router.createWebRtcTransport({
         listenIps: mediasoupSettings.webRtcTransport.listenIps,
@@ -345,10 +361,6 @@ export class WssRoom {
         appData: { user_id, type: data.type },
       });
 
-      if (maxIncomingBitrate) {
-        await transport.setMaxIncomingBitrate(maxIncomingBitrate);
-      }
-
       switch (data.type) {
         case 'producer':
           user.media.producerTransport = transport;
@@ -357,6 +369,8 @@ export class WssRoom {
           user.media.consumerTransport = transport;
           break;
       }
+
+      await this.updateMaxIncomingBitrate();
 
       return {
         params: {
@@ -750,24 +764,12 @@ export class WssRoom {
 
   /**
    * Id юзеров которые передаеют стримы на сервер.
-   * @param {string} user_id автор сообщения
+   * @param {string} _user_id автор сообщения
    * @returns {Promise<string[]>} Promise<string[]>
    */
-  private async getProducerIds(user_id: string): Promise<string[]> {
+  private async getProducerIds(_user_id: string): Promise<string[]> {
     try {
-      return Array.from(this.clients.values())
-        .filter(c => {
-          if (c.media) {
-            if ((c.media.producerVideo || c.media.producerAudio) && c.id !== user_id) {
-              return true;
-            } else {
-              return false;
-            }
-          } else {
-            return false;
-          }
-        })
-        .map(c => c.id);
+      return this.producerIds;
     } catch (error) {
       this.logger.error(error.message, error.stack, 'MediasoupHelper - getProducerIds');
     }
@@ -972,6 +974,43 @@ export class WssRoom {
       return true;
     } catch (error) {
       this.logger.error(error.message, error.stack, 'MediasoupHelper - allProducerResume');
+    }
+  }
+
+  /**
+   * Изменяет качество стрима.
+   * @returns {Promise<boolean>} Promise<boolean>
+   */
+  private async updateMaxIncomingBitrate(): Promise<boolean> {
+    try {
+      const { maxIncomingBitrate, minIncomingBitrate, factorIncomingBitrate } = mediasoupSettings.webRtcTransport;
+
+      let newMaxIncomingBitrate = Math.round(
+        maxIncomingBitrate / ((this.producerIds.length - 1) * factorIncomingBitrate)
+      );
+
+      if (newMaxIncomingBitrate < minIncomingBitrate) {
+        newMaxIncomingBitrate = minIncomingBitrate;
+      }
+
+      if (this.producerIds.length < 3) {
+        newMaxIncomingBitrate = maxIncomingBitrate;
+      }
+
+      this.clients.forEach(client => {
+        if (client.media) {
+          if (client.media.producerTransport && !client.media.producerTransport.closed) {
+            client.media.producerTransport.setMaxIncomingBitrate(newMaxIncomingBitrate);
+          }
+          if (client.media.consumerTransport && !client.media.consumerTransport.closed) {
+            client.media.consumerTransport.setMaxIncomingBitrate(newMaxIncomingBitrate);
+          }
+        }
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'MediasoupHelper - updateMaxBitrate');
     }
   }
 }
