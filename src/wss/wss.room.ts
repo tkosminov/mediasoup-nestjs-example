@@ -455,6 +455,10 @@ export class WssRoom {
         });
       }
 
+      producer.on('score', (info: { score: number; ssrc: number; rid: string }) => {
+        this.logger.info(`room ${this.session_id} user ${user_id} producer ${data.kind} score ${JSON.stringify(info)}`);
+      });
+
       return {};
     } catch (error) {
       this.logger.error(error.message, error.stack, 'MediasoupHelper - produce');
@@ -559,6 +563,10 @@ export class WssRoom {
       consumer.on('producerresume', async () => {
         await consumer.resume();
         user.io.emit('producerresume', { user_id: data.user_id, kind: data.kind });
+      });
+
+      consumer.on('score', (info: { score: number; producerScore: number }) => {
+        this.logger.info(`room ${this.session_id} user ${user_id} consumer ${data.kind} score ${JSON.stringify(info)}`);
       });
 
       if (consumer.kind === 'video') {
