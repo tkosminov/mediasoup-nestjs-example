@@ -455,7 +455,7 @@ export class WssRoom {
         });
       }
 
-      producer.on('score', (info: { score: number; ssrc: number; rid: string }) => {
+      producer.on('score', (info: { score: number; ssrc: number; rid?: string }) => {
         this.logger.info(`room ${this.session_id} user ${user_id} producer ${data.kind} score ${JSON.stringify(info)}`);
       });
 
