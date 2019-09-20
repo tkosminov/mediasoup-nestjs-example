@@ -76,10 +76,10 @@
           "announcedIp": null
         }
       ],
-      "maxIncomingBitrate": 200000,
-      "minIncomingBitrate": 50000,
-      "factorIncomingBitrate": 0.75,
-      "initialAvailableOutgoingBitrate": 100000
+      "initialAvailableOutgoingBitrate": 100000,
+      "minimumAvailableOutgoingBitrate": 15000,
+      "maximumAvailableOutgoingBitrate": 200000,
+      "factorIncomingBitrate": 0.75
     }
   }
 }

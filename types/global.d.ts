@@ -36,6 +36,8 @@ interface IMediasoupMediacodecSettings {
   readonly mimeType: string;
   readonly clockRate: number;
   readonly channels?: number;
+  readonly preferredPayloadType?: number;
+  readonly rtcpFeedback?: IMediasoupRtcpFeedback[];
   readonly parameters?: { "x-google-start-bitrate": number }
 }
 
@@ -46,10 +48,10 @@ interface IMediasoupListenIds {
 
 interface IMediasoupWebRtcTransport {
   readonly listenIps: IMediasoupListenIds[];
-  readonly maxIncomingBitrate: number;
-  readonly minIncomingBitrate: number;
-  readonly factorIncomingBitrate: number;
   readonly initialAvailableOutgoingBitrate: number;
+  readonly minimumAvailableOutgoingBitrate: number;
+  readonly maximumAvailableOutgoingBitrate: number;
+  readonly factorIncomingBitrate: number;
 }
 
 interface IMediasoupSettings {

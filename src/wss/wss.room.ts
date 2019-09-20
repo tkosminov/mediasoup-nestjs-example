@@ -340,7 +340,7 @@ export class WssRoom {
 
       const user = this.clients.get(user_id);
 
-      const { initialAvailableOutgoingBitrate } = mediasoupSettings.webRtcTransport;
+      const { initialAvailableOutgoingBitrate, minimumAvailableOutgoingBitrate } = mediasoupSettings.webRtcTransport;
 
       const transport = await this.router.createWebRtcTransport({
         listenIps: mediasoupSettings.webRtcTransport.listenIps,
@@ -348,6 +348,7 @@ export class WssRoom {
         enableSctp: true,
         enableTcp: true,
         initialAvailableOutgoingBitrate,
+        minimumAvailableOutgoingBitrate,
         appData: { user_id, type: data.type },
       });
 
@@ -971,20 +972,28 @@ export class WssRoom {
    * Изменяет качество стрима.
    * @returns {Promise<boolean>} Promise<boolean>
    */
+  /**
+   * Уменьшает качество стрима.
+   * @returns {Promise<boolean>} Promise<boolean>
+   */
   private async updateMaxIncomingBitrate(): Promise<boolean> {
     try {
-      const { maxIncomingBitrate, minIncomingBitrate, factorIncomingBitrate } = mediasoupSettings.webRtcTransport;
+      const {
+        minimumAvailableOutgoingBitrate,
+        maximumAvailableOutgoingBitrate,
+        factorIncomingBitrate,
+      } = mediasoupSettings.webRtcTransport;
 
       let newMaxIncomingBitrate = Math.round(
-        maxIncomingBitrate / ((this.producerIds.length - 1) * factorIncomingBitrate)
+        maximumAvailableOutgoingBitrate / ((this.producerIds.length - 1) * factorIncomingBitrate)
       );
 
-      if (newMaxIncomingBitrate < minIncomingBitrate) {
-        newMaxIncomingBitrate = minIncomingBitrate;
+      if (newMaxIncomingBitrate < minimumAvailableOutgoingBitrate) {
+        newMaxIncomingBitrate = minimumAvailableOutgoingBitrate;
       }
 
       if (this.producerIds.length < 3) {
-        newMaxIncomingBitrate = maxIncomingBitrate;
+        newMaxIncomingBitrate = maximumAvailableOutgoingBitrate;
       }
 
       this.clients.forEach(client => {
