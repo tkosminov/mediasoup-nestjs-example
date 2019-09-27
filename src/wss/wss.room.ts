@@ -22,7 +22,7 @@ export class WssRoom {
   constructor(
     private worker: IWorker,
     public workerIndex: number,
-    private readonly session_id: string,
+    public readonly session_id: string,
     private readonly logger: LoggerService,
     private readonly wssServer: io.Server
   ) {}
@@ -108,10 +108,12 @@ export class WssRoom {
     return this.router.rtpCapabilities;
   }
 
-  get info() {
+  get stats() {
     const clientsArray = Array.from(this.clients.values());
 
     return {
+      id: this.session_id,
+      worker: this.workerIndex,
       clients: clientsArray.map(c => ({
         id: c.id,
         device: c.device,

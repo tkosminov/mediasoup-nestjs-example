@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { LoggerService } from '../logger/logger.service';
 
+import { WssController } from './wss.controller';
 import { WssGateway } from './wss.gateway';
 
 @Module({
@@ -13,6 +14,7 @@ import { WssGateway } from './wss.gateway';
       useValue: new LoggerService('Websocket'),
     },
   ],
-  exports: [],
+  exports: [WssGateway],
+  controllers: [WssController],
 })
 export class WssModule {}

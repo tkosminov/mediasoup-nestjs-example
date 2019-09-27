@@ -20,15 +20,14 @@ import { WssRoom } from './wss.room';
 const appSettings = config.get<IAppSettings>('APP_SETTINGS');
 const mediasoupSettings = config.get<IMediasoupSettings>('MEDIASOUP_SETTINGS');
 
-// tslint:disable: no-unsafe-any
 @WebSocketGateway(appSettings.wssPort)
 export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   public server: io.Server;
 
-  private readonly rooms: Map<string, WssRoom> = new Map();
+  public rooms: Map<string, WssRoom> = new Map();
 
-  private workers: { [index: number]: { clientsCount: number; worker: IWorker } };
+  public workers: { [index: number]: { clientsCount: number; roomsCount: number; worker: IWorker } };
 
   constructor(private readonly logger: LoggerService) {
     this.createWorkers();
@@ -47,6 +46,7 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.workers = (await Promise.all(promises)).reduce((acc, worker, index) => {
       acc[index] = {
         clientsCount: 0,
+        roomsCount: 0,
         worker,
       };
 
@@ -59,18 +59,21 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * @returns {void} void
    */
   private updateWorkerStats(): void {
-    const data: { [index: number]: number } = {};
+    const data: { [index: number]: { clientsCount: number; roomsCount: number } } = {};
 
     this.rooms.forEach(room => {
       if (data[room.workerIndex]) {
-        data[room.workerIndex] += room.clientsCount;
+        data[room.workerIndex].clientsCount += room.clientsCount;
+        data[room.workerIndex].roomsCount += 1;
       } else {
-        data[room.workerIndex] = room.clientsCount;
+        data[room.workerIndex].clientsCount = room.clientsCount;
+        data[room.workerIndex].roomsCount = 1;
       }
     });
 
-    Object.entries(data).forEach(([index, clientsCount]) => {
-      this.workers[index].clientsCount = clientsCount;
+    Object.entries(data).forEach(([index, info]) => {
+      this.workers[index].clientsCount = info.clientsCount;
+      this.workers[index].roomsCount = info.roomsCount;
     });
   }
 
@@ -158,6 +161,19 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('mediaRoomInfo')
+  public async roomInfo(client: io.Socket) {
+    try {
+      const { session_id } = this.getClientQuery(client);
+
+      const room = this.rooms.get(session_id);
+
+      return room.stats;
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'WssGateway - roomInfo');
+    }
+  }
+
   @SubscribeMessage('media')
   public async media(client: io.Socket, msg: IMsMessage) {
     try {
@@ -172,36 +188,36 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('mediaReconfigure')
-  public async remedia(client: io.Socket) {
+  public async roomReconfigure(client: io.Socket) {
     try {
       const { session_id } = this.getClientQuery(client);
 
       const room = this.rooms.get(session_id);
 
       if (room) {
-        this.updateWorkerStats();
-
-        const index = this.getOptimalWorkerIndex();
-
-        await room.reConfigureMedia(this.workers[index].worker, index);
+        await this.reConfigureMedia(room);
       }
 
       return true;
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'WssGateway - reConfigureMedia');
+      this.logger.error(error.message, error.stack, 'WssGateway - roomReconfigure');
     }
   }
 
-  @SubscribeMessage('mediaRoomInfo')
-  public async roomInfo(client: io.Socket) {
+  /**
+   * Меняет воркер у комнаты.
+   * @param {WssRoom} room комната
+   * @returns {Promise<void>} Promise<void>
+   */
+  public async reConfigureMedia(room: WssRoom): Promise<void> {
     try {
-      const { session_id } = this.getClientQuery(client);
+      this.updateWorkerStats();
 
-      const room = this.rooms.get(session_id);
+      const index = this.getOptimalWorkerIndex();
 
-      return room.info;
+      await room.reConfigureMedia(this.workers[index].worker, index);
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'WssGateway - roomInfo');
+      this.logger.error(error.message, error.stack, 'WssGateway - reConfigureMedia');
     }
   }
 }
