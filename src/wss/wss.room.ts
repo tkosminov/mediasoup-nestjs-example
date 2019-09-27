@@ -2,20 +2,19 @@ import config from 'config';
 import io from 'socket.io';
 
 import { IConsumer } from 'mediasoup/Consumer';
+import { TAudioLevelObserver, TKind, TPeer, TWebRtcTransport } from 'mediasoup/interfaces';
 import { IProducer } from 'mediasoup/Producer';
 import { IRouter } from 'mediasoup/Router';
 import { IWorker } from 'mediasoup/Worker';
-import { IMediasoupClient, IMsMessage, TAudioLevelObserver, TWebRtcTransport } from './wss.interfaces';
+
+import { IClient, IClientQuery, IMediasoupClient, IMsMessage } from './wss.interfaces';
 
 import { LoggerService } from '../logger/logger.service';
 
 const mediasoupSettings = config.get<IMediasoupSettings>('MEDIASOUP_SETTINGS');
 
-type TPeer = 'producer' | 'consumer';
-type TKind = 'video' | 'audio';
-
 export class WssRoom {
-  public readonly clients: Map<string, { id: string; io: io.Socket; media?: IMediasoupClient }> = new Map();
+  public readonly clients: Map<string, IClient> = new Map();
 
   public router: IRouter;
   public audioLevelObserver: TAudioLevelObserver;
@@ -40,14 +39,14 @@ export class WssRoom {
         .then(() => {
           // tslint:disable-next-line: no-any
           this.audioLevelObserver.on('volumes', (volumes: Array<{ producer: IProducer; volume: number }>) => {
-            this.wssServer.to(this.session_id).emit('activeSpeaker', {
+            this.wssServer.to(this.session_id).emit('mediaActiveSpeaker', {
               user_id: (volumes[0].producer.appData as { user_id: string }).user_id,
               volume: volumes[0].volume,
             });
           });
 
           this.audioLevelObserver.on('silence', () => {
-            this.wssServer.to(this.session_id).emit('activeSpeaker', {
+            this.wssServer.to(this.session_id).emit('mediaActiveSpeaker', {
               user_id: null,
             });
           });
@@ -63,6 +62,30 @@ export class WssRoom {
 
   get clientsIds(): string[] {
     return Array.from(this.clients.keys());
+  }
+
+  get audioProducerIds(): string[] {
+    return Array.from(this.clients.values())
+      .filter(c => {
+        if (c.media && c.media.producerAudio && !c.media.producerAudio.closed) {
+          return true;
+        }
+
+        return false;
+      })
+      .map(c => c.id);
+  }
+
+  get videoProducerIds(): string[] {
+    return Array.from(this.clients.values())
+      .filter(c => {
+        if (c.media && c.media.producerVideo && !c.media.producerVideo.closed) {
+          return true;
+        }
+
+        return false;
+      })
+      .map(c => c.id);
   }
 
   get producerIds(): string[] {
@@ -83,6 +106,28 @@ export class WssRoom {
 
   get getRouterRtpCapabilities(): RTCRtpCapabilities {
     return this.router.rtpCapabilities;
+  }
+
+  get info() {
+    const clientsArray = Array.from(this.clients.values());
+
+    return {
+      clients: clientsArray.map(c => ({
+        id: c.id,
+        device: c.device,
+        produceAudio: c.media.producerAudio ? true : false,
+        produceVideo: c.media.producerVideo ? true : false,
+      })),
+      groupByDevice: clientsArray.reduce((acc, curr) => {
+        if (!acc[curr.device]) {
+          acc[curr.device] = 1;
+        }
+
+        acc[curr.device] += 1;
+
+        return acc;
+      }, {}) as { [device: string]: number },
+    };
   }
 
   /**
@@ -107,7 +152,7 @@ export class WssRoom {
         const { io: client, media, id } = user;
 
         if (client) {
-          client.broadcast.to(this.session_id).emit('disconnectMember', { id });
+          client.broadcast.to(this.session_id).emit('mediaDisconnectMember', { id });
           client.leave(this.session_id);
         }
 
@@ -150,7 +195,7 @@ export class WssRoom {
 
       await this.configureWorker();
 
-      this.broadcastAll('reConfigureMedia', {});
+      this.broadcastAll('mediaReconfigure', {});
     } catch (error) {
       this.logger.error(error.message, error.stack, 'WssRoom - reConfigureMedia');
     }
@@ -213,20 +258,20 @@ export class WssRoom {
 
   /**
    * Добавляет юзера в комнату.
-   * @param {string} user_id id юзера
+   * @param {IClientQuery} query query клиента
    * @param {io.Socket} client клиент
    * @returns {Promise<boolean>} Promise<boolean>
    */
-  public async addClient(user_id: string, client: io.Socket): Promise<boolean> {
+  public async addClient(query: IClientQuery, client: io.Socket): Promise<boolean> {
     try {
-      this.logger.info(`${user_id} connected to room ${this.session_id}`);
+      this.logger.info(`${query.user_id} connected to room ${this.session_id}`);
 
-      this.clients.set(user_id, { io: client, id: user_id, media: {} });
+      this.clients.set(query.user_id, { io: client, id: query.user_id, device: query.device, media: {} });
 
       client.join(this.session_id);
 
-      this.broadcastAll('clientConnected', {
-        id: user_id,
+      this.broadcastAll('mediaClientConnected', {
+        id: query.user_id,
       });
 
       return true;
@@ -250,7 +295,7 @@ export class WssRoom {
         const { io: client, media, id } = user;
 
         if (client) {
-          this.broadcast(client, 'disconnectMember', { id });
+          this.broadcast(client, 'mediaDisconnectMember', { id });
 
           client.leave(this.session_id);
         }
@@ -305,8 +350,10 @@ export class WssRoom {
           return await this.getProducerStats(msg.data as { user_id: string; kind: TKind }, user_id);
         case 'getConsumerStats':
           return await this.getConsumerStats(msg.data as { user_id: string; kind: TKind }, user_id);
-        case 'getProducerIds':
-          return await this.getProducerIds(user_id);
+        case 'getAudioProducerIds':
+          return await this.getAudioProducerIds(user_id);
+        case 'getVideoProducerIds':
+          return await this.getVideoProducerIds(user_id);
         case 'producerClose':
           return await this.producerClose(msg.data as { user_id: string; kind: TKind }, user_id);
         case 'producerPause':
@@ -766,11 +813,24 @@ export class WssRoom {
    * @param {string} _user_id автор сообщения
    * @returns {Promise<string[]>} Promise<string[]>
    */
-  private async getProducerIds(_user_id: string): Promise<string[]> {
+  private async getVideoProducerIds(_user_id: string): Promise<string[]> {
     try {
-      return this.producerIds;
+      return this.videoProducerIds;
     } catch (error) {
-      this.logger.error(error.message, error.stack, 'MediasoupHelper - getProducerIds');
+      this.logger.error(error.message, error.stack, 'MediasoupHelper - getVideoProducerIds');
+    }
+  }
+
+  /**
+   * Id юзеров которые передаеют стримы на сервер.
+   * @param {string} _user_id автор сообщения
+   * @returns {Promise<string[]>} Promise<string[]>
+   */
+  private async getAudioProducerIds(_user_id: string): Promise<string[]> {
+    try {
+      return this.audioProducerIds;
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'MediasoupHelper - getAudioProducerIds');
     }
   }
 

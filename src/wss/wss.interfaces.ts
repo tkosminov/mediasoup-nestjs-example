@@ -1,12 +1,21 @@
-import { IAudioLevelObserver } from 'mediasoup/AudioLevelObserver';
-import { IConsumer } from 'mediasoup/Consumer';
-import { IProducer } from 'mediasoup/Producer';
-import { IRtpObserver } from 'mediasoup/RtpObserver';
-import { ITransport } from 'mediasoup/Transport';
-import { IWebRtcTransport } from 'mediasoup/WebRtcTransport';
+import io from 'socket.io';
 
-export type TWebRtcTransport = IWebRtcTransport & ITransport;
-export type TAudioLevelObserver = IAudioLevelObserver & IRtpObserver;
+import { IConsumer } from 'mediasoup/Consumer';
+import { TWebRtcTransport } from 'mediasoup/interfaces';
+import { IProducer } from 'mediasoup/Producer';
+
+export interface IClientQuery {
+  readonly user_id: string;
+  readonly session_id: string;
+  readonly device: string;
+}
+
+export interface IClient {
+  id: string;
+  io: io.Socket;
+  media?: IMediasoupClient;
+  device: string;
+}
 
 export interface IMediasoupClient {
   producerVideo?: IProducer;
@@ -29,7 +38,8 @@ export interface IMsMessage {
     | 'getTransportStats'
     | 'getProducerStats'
     | 'getConsumerStats'
-    | 'getProducerIds'
+    | 'getAudioProducerIds'
+    | 'getVideoProducerIds'
     | 'producerClose'
     | 'producerPause'
     | 'producerResume'

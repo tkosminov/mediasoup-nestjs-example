@@ -4,6 +4,8 @@ import { IDataConsumer } from './DataConsumer';
 import { IDataProducer } from './DataProducer';
 import { IProducer } from './Producer';
 
+import { ITransportStat } from './interfaces';
+
 // tslint:disable: no-any
 
 export interface ITransport {
@@ -99,9 +101,9 @@ export interface ITransport {
    * Get Transport stats.
    *
    * @async
-   * @returns {Array<Object>}
+   * @returns {Array<ITransportStat>}
    */
-  getStats(): Promise<object[]>;
+  getStats(): Promise<ITransportStat[]>;
 
   /**
    * Provide the Transport remote parameters.

@@ -1,4 +1,5 @@
 import { IChannel } from './Channel';
+import { IPeerStat } from './interfaces';
 
 // tslint:disable: no-any
 
@@ -86,7 +87,7 @@ export interface IDataProducer {
    * Get DataConsumer stats.
    *
    * @async
-   * @returns {Array<Object>}
+   * @returns {Array<IPeerStat>}
    */
-  getStats(): Promise<object[]>;
+  getStats(): Promise<IPeerStat[]>;
 }

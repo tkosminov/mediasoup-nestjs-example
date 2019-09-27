@@ -14,7 +14,7 @@ import { IWorker } from 'mediasoup/Worker';
 
 import { LoggerService } from '../logger/logger.service';
 
-import { IMsMessage } from './wss.interfaces';
+import { IClientQuery, IMsMessage } from './wss.interfaces';
 import { WssRoom } from './wss.room';
 
 const appSettings = config.get<IAppSettings>('APP_SETTINGS');
@@ -90,31 +90,31 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
-  private getClientQuery(client: io.Socket): { user_id: string; session_id: string } {
-    return client.handshake.query as { user_id: string; session_id: string };
+  private getClientQuery(client: io.Socket): IClientQuery {
+    return client.handshake.query as IClientQuery;
   }
 
   public async handleConnection(client: io.Socket) {
     try {
-      const { user_id, session_id } = this.getClientQuery(client);
+      const query = this.getClientQuery(client);
 
-      let room = this.rooms.get(session_id);
+      let room = this.rooms.get(query.session_id);
 
       if (!room) {
         this.updateWorkerStats();
 
         const index = this.getOptimalWorkerIndex();
 
-        room = new WssRoom(this.workers[index].worker, index, session_id, this.logger, this.server);
+        room = new WssRoom(this.workers[index].worker, index, query.session_id, this.logger, this.server);
 
         await room.load();
 
-        this.rooms.set(session_id, room);
+        this.rooms.set(query.session_id, room);
 
-        this.logger.info(`room ${session_id} created`);
+        this.logger.info(`room ${query.session_id} created`);
       }
 
-      await room.addClient(user_id, client);
+      await room.addClient(query, client);
 
       return true;
     } catch (error) {
@@ -141,16 +141,17 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('roomClients')
-  public async roomInfo(client: io.Socket) {
+  @SubscribeMessage('mediaRoomClients')
+  public async roomClients(client: io.Socket) {
     try {
       const { session_id } = this.getClientQuery(client);
 
       const room = this.rooms.get(session_id);
 
       return {
-        clientsCount: room.clientsCount,
         clientsIds: room.clientsIds,
+        producerAudioIds: room.audioProducerIds,
+        producerVideoIds: room.videoProducerIds,
       };
     } catch (error) {
       this.logger.error(error.message, error.stack, 'WssGateway - roomClients');
@@ -170,7 +171,7 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('reConfigureMedia')
+  @SubscribeMessage('mediaReconfigure')
   public async remedia(client: io.Socket) {
     try {
       const { session_id } = this.getClientQuery(client);
@@ -188,6 +189,19 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return true;
     } catch (error) {
       this.logger.error(error.message, error.stack, 'WssGateway - reConfigureMedia');
+    }
+  }
+
+  @SubscribeMessage('mediaRoomInfo')
+  public async roomInfo(client: io.Socket) {
+    try {
+      const { session_id } = this.getClientQuery(client);
+
+      const room = this.rooms.get(session_id);
+
+      return room.info;
+    } catch (error) {
+      this.logger.error(error.message, error.stack, 'WssGateway - roomInfo');
     }
   }
 }
