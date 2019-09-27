@@ -1040,10 +1040,6 @@ export class WssRoom {
    * Изменяет качество стрима.
    * @returns {Promise<boolean>} Promise<boolean>
    */
-  /**
-   * Уменьшает качество стрима.
-   * @returns {Promise<boolean>} Promise<boolean>
-   */
   private async updateMaxIncomingBitrate(): Promise<boolean> {
     try {
       const {
