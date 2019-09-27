@@ -494,11 +494,11 @@ export class WssRoom {
           break;
       }
 
-      this.broadcast(user.io, 'produce', { user_id, kind: data.kind });
+      this.broadcast(user.io, 'mediaProduce', { user_id, kind: data.kind });
 
       if (data.kind === 'video') {
         producer.on('videoorientationchange', (videoOrientation: object) => {
-          this.broadcastAll('videoorientationchange', { user_id, videoOrientation });
+          this.broadcastAll('mediaVideoOrientationChange', { user_id, videoOrientation });
         });
       }
 
@@ -604,12 +604,12 @@ export class WssRoom {
 
       consumer.on('producerpause', async () => {
         await consumer.pause();
-        user.io.emit('producerpause', { user_id: data.user_id, kind: data.kind });
+        user.io.emit('mediaProducerPause', { user_id: data.user_id, kind: data.kind });
       });
 
       consumer.on('producerresume', async () => {
         await consumer.resume();
-        user.io.emit('producerresume', { user_id: data.user_id, kind: data.kind });
+        user.io.emit('mediaProducerResume', { user_id: data.user_id, kind: data.kind });
       });
 
       consumer.on('score', (info: { score: number; producerScore: number }) => {
@@ -925,7 +925,7 @@ export class WssRoom {
         if (target_producer && target_producer.paused && !target_producer.closed) {
           await target_producer.resume();
         } else if (target_producer && target_producer.closed) {
-          target_user.io.emit('reproduce', { kind: data.kind });
+          target_user.io.emit('mediaReproduce', { kind: data.kind });
         }
       }
 
@@ -1025,7 +1025,7 @@ export class WssRoom {
           if (target_producer && target_producer.paused && !target_producer.closed) {
             await target_producer.resume();
           } else if (target_producer && target_producer.closed) {
-            client.io.emit('reproduce', { kind: data.kind });
+            client.io.emit('mediaReproduce', { kind: data.kind });
           }
         }
       });
