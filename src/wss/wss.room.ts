@@ -297,7 +297,7 @@ export class WssRoom {
         const { io: client, media, id } = user;
 
         if (client) {
-          this.broadcast(client, 'mediaDisconnectMember', { id });
+          this.broadcast(client, 'mediaClientDisconnect', { id });
 
           client.leave(this.session_id);
         }
