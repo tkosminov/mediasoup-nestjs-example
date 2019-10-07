@@ -26,6 +26,13 @@ export interface IMediasoupClient {
   consumersAudio?: Map<string, IConsumer>;
 }
 
+export interface IWorkerInfo {
+  workerIndex: number;
+  clientsCount: number;
+  roomsCount: number;
+  pidInfo?: object;
+}
+
 export interface IMsMessage {
   readonly action:
     | 'getRouterRtpCapabilities'

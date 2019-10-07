@@ -14,7 +14,7 @@ import { IWorker } from 'mediasoup/Worker';
 
 import { LoggerService } from '../logger/logger.service';
 
-import { IClientQuery, IMsMessage } from './wss.interfaces';
+import { IClientQuery, IMsMessage, IWorkerInfo } from './wss.interfaces';
 import { WssRoom } from './wss.room';
 
 const appSettings = config.get<IAppSettings>('APP_SETTINGS');
@@ -27,10 +27,25 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   public rooms: Map<string, WssRoom> = new Map();
 
-  public workers: { [index: number]: { clientsCount: number; roomsCount: number; worker: IWorker } };
+  public workers: { [index: number]: { clientsCount: number; roomsCount: number; pid: number; worker: IWorker } };
 
   constructor(private readonly logger: LoggerService) {
     this.createWorkers();
+  }
+
+  get workersInfo() {
+    return Object.fromEntries(
+      Object.entries(this.workers).map(w => {
+        return [
+          w[1].pid,
+          {
+            workerIndex: parseInt(w[0], 10),
+            clientsCount: w[1].clientsCount,
+            roomsCount: w[1].roomsCount,
+          },
+        ];
+      })
+    ) as { [pid: string]: IWorkerInfo };
   }
 
   /**
@@ -47,6 +62,7 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
       acc[index] = {
         clientsCount: 0,
         roomsCount: 0,
+        pid: worker.pid,
         worker,
       };
 
