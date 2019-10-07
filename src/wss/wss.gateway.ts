@@ -34,6 +34,8 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   get workersInfo() {
+    this.updateWorkerStats();
+
     return Object.fromEntries(
       Object.entries(this.workers).map(w => {
         return [
@@ -74,7 +76,7 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Обновляет инфу о количество пользователей на веркере.
    * @returns {void} void
    */
-  private updateWorkerStats(): void {
+  public updateWorkerStats(): void {
     const data: { [index: number]: { clientsCount: number; roomsCount: number } } = {};
 
     this.rooms.forEach(room => {
@@ -82,14 +84,22 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data[room.workerIndex].clientsCount += room.clientsCount;
         data[room.workerIndex].roomsCount += 1;
       } else {
-        data[room.workerIndex].clientsCount = room.clientsCount;
-        data[room.workerIndex].roomsCount = 1;
+        data[room.workerIndex] = {
+          clientsCount: room.clientsCount,
+          roomsCount: 1,
+        };
       }
     });
 
-    Object.entries(data).forEach(([index, info]) => {
-      this.workers[index].clientsCount = info.clientsCount;
-      this.workers[index].roomsCount = info.roomsCount;
+    Object.entries(this.workers).forEach(([index, _worker]) => {
+      const info = data[index];
+      if (info) {
+        this.workers[index].clientsCount = info.clientsCount;
+        this.workers[index].roomsCount = info.roomsCount;
+      } else {
+        this.workers[index].clientsCount = 0;
+        this.workers[index].roomsCount = 0;
+      }
     });
   }
 

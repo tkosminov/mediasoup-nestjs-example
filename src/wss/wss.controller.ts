@@ -17,7 +17,7 @@ export class WssController {
     const usage = await pidusage(Object.keys(workers));
 
     Object.keys(workers).forEach(key => {
-      workers[key].pidInfo = usage[key];
+      workers[key].pidInfo = usage[key] || {};
     });
 
     return workers;
