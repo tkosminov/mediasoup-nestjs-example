@@ -1,8 +1,6 @@
 import io from 'socket.io';
 
-import { IConsumer } from 'mediasoup/Consumer';
-import { TWebRtcTransport } from 'mediasoup/interfaces';
-import { IProducer } from 'mediasoup/Producer';
+import { Consumer, Producer, WebRtcTransport } from 'mediasoup/lib/types';
 
 export interface IClientQuery {
   readonly user_id: string;
@@ -18,12 +16,12 @@ export interface IClient {
 }
 
 export interface IMediasoupClient {
-  producerVideo?: IProducer;
-  producerAudio?: IProducer;
-  producerTransport?: TWebRtcTransport;
-  consumerTransport?: TWebRtcTransport;
-  consumersVideo?: Map<string, IConsumer>;
-  consumersAudio?: Map<string, IConsumer>;
+  producerVideo?: Producer;
+  producerAudio?: Producer;
+  producerTransport?: WebRtcTransport;
+  consumerTransport?: WebRtcTransport;
+  consumersVideo?: Map<string, Consumer>;
+  consumersAudio?: Map<string, Consumer>;
 }
 
 export interface IWorkerInfo {

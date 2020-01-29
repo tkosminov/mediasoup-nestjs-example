@@ -1,11 +1,22 @@
 import config from 'config';
 import io from 'socket.io';
 
-import { IConsumer } from 'mediasoup/Consumer';
-import { TAudioLevelObserver, TKind, TPeer, TWebRtcTransport } from 'mediasoup/interfaces';
-import { IProducer } from 'mediasoup/Producer';
-import { IRouter } from 'mediasoup/Router';
-import { IWorker } from 'mediasoup/Worker';
+import AudioLevelObserver from 'mediasoup/lib/AudioLevelObserver';
+import Router, { RouterOptions } from 'mediasoup/lib/Router';
+import { MediaKind, RtpCapabilities } from 'mediasoup/lib/RtpParameters';
+import {
+  Consumer,
+  ConsumerLayers,
+  ConsumerScore,
+  DtlsParameters,
+  Producer,
+  ProducerScore,
+  ProducerVideoOrientation,
+  WebRtcTransport,
+} from 'mediasoup/lib/types';
+import Worker from 'mediasoup/lib/Worker';
+
+type TPeer = 'producer' | 'consumer';
 
 import { IClient, IClientQuery, IMediasoupClient, IMsMessage } from './wss.interfaces';
 
@@ -16,11 +27,11 @@ const mediasoupSettings = config.get<IMediasoupSettings>('MEDIASOUP_SETTINGS');
 export class WssRoom {
   public readonly clients: Map<string, IClient> = new Map();
 
-  public router: IRouter;
-  public audioLevelObserver: TAudioLevelObserver;
+  public router: Router;
+  public audioLevelObserver: AudioLevelObserver;
 
   constructor(
-    private worker: IWorker,
+    private worker: Worker,
     public workerIndex: number,
     public readonly session_id: string,
     private readonly logger: LoggerService,
@@ -30,7 +41,7 @@ export class WssRoom {
   private async configureWorker() {
     try {
       await this.worker
-        .createRouter({ mediaCodecs: mediasoupSettings.router.mediaCodecs })
+        .createRouter({ mediaCodecs: mediasoupSettings.router.mediaCodecs } as RouterOptions)
         .then(router => {
           this.router = router;
           return this.router.createAudioLevelObserver({ maxEntries: 1, threshold: -80, interval: 800 });
@@ -38,7 +49,7 @@ export class WssRoom {
         .then(observer => (this.audioLevelObserver = observer))
         .then(() => {
           // tslint:disable-next-line: no-any
-          this.audioLevelObserver.on('volumes', (volumes: Array<{ producer: IProducer; volume: number }>) => {
+          this.audioLevelObserver.on('volumes', (volumes: Array<{ producer: Producer; volume: number }>) => {
             this.wssServer.to(this.session_id).emit('mediaActiveSpeaker', {
               user_id: (volumes[0].producer.appData as { user_id: string }).user_id,
               volume: volumes[0].volume,
@@ -104,7 +115,7 @@ export class WssRoom {
       .map(c => c.id);
   }
 
-  get getRouterRtpCapabilities(): RTCRtpCapabilities {
+  get getRouterRtpCapabilities(): RtpCapabilities {
     return this.router.rtpCapabilities;
   }
 
@@ -178,7 +189,7 @@ export class WssRoom {
    * @param {number} index индекс воркера
    * @returns {Promise<void>} Promise<void>
    */
-  public async reConfigureMedia(worker: IWorker, index: number): Promise<void> {
+  public async reConfigureMedia(worker: Worker, index: number): Promise<void> {
     try {
       this.clients.forEach(user => {
         const { media } = user;
@@ -332,14 +343,14 @@ export class WssRoom {
           return await this.createWebRtcTransport(msg.data as { type: TPeer }, user_id);
         case 'connectWebRtcTransport':
           return await this.connectWebRtcTransport(
-            msg.data as { dtlsParameters: RTCDtlsParameters; type: TPeer },
+            msg.data as { dtlsParameters: DtlsParameters; type: TPeer },
             user_id
           );
         case 'produce':
-          return await this.produce(msg.data as { rtpParameters: RTCRtpParameters; kind: TKind }, user_id);
+          return await this.produce(msg.data as { rtpParameters: RTCRtpParameters; kind: MediaKind }, user_id);
         case 'consume':
           return await this.consume(
-            msg.data as { rtpCapabilities: RTCRtpCapabilities; user_id: string; kind: TKind },
+            msg.data as { rtpCapabilities: RtpCapabilities; user_id: string; kind: MediaKind },
             user_id
           );
         case 'restartIce':
@@ -349,25 +360,25 @@ export class WssRoom {
         case 'getTransportStats':
           return await this.getTransportStats(msg.data as { type: TPeer }, user_id);
         case 'getProducerStats':
-          return await this.getProducerStats(msg.data as { user_id: string; kind: TKind }, user_id);
+          return await this.getProducerStats(msg.data as { user_id: string; kind: MediaKind }, user_id);
         case 'getConsumerStats':
-          return await this.getConsumerStats(msg.data as { user_id: string; kind: TKind }, user_id);
+          return await this.getConsumerStats(msg.data as { user_id: string; kind: MediaKind }, user_id);
         case 'getAudioProducerIds':
           return await this.getAudioProducerIds(user_id);
         case 'getVideoProducerIds':
           return await this.getVideoProducerIds(user_id);
         case 'producerClose':
-          return await this.producerClose(msg.data as { user_id: string; kind: TKind }, user_id);
+          return await this.producerClose(msg.data as { user_id: string; kind: MediaKind }, user_id);
         case 'producerPause':
-          return await this.producerPause(msg.data as { user_id: string; kind: TKind }, user_id);
+          return await this.producerPause(msg.data as { user_id: string; kind: MediaKind }, user_id);
         case 'producerResume':
-          return await this.producerResume(msg.data as { user_id: string; kind: TKind }, user_id);
+          return await this.producerResume(msg.data as { user_id: string; kind: MediaKind }, user_id);
         case 'allProducerClose':
-          return await this.allProducerClose(msg.data as { kind: TKind }, user_id);
+          return await this.allProducerClose(msg.data as { kind: MediaKind }, user_id);
         case 'allProducerPause':
-          return await this.allProducerPause(msg.data as { kind: TKind }, user_id);
+          return await this.allProducerPause(msg.data as { kind: MediaKind }, user_id);
         case 'allProducerResume':
-          return await this.allProducerResume(msg.data as { kind: TKind }, user_id);
+          return await this.allProducerResume(msg.data as { kind: MediaKind }, user_id);
       }
 
       throw new Error(`Couldn't find Mediasoup Event with 'name'=${msg.action}`);
@@ -389,7 +400,7 @@ export class WssRoom {
 
       const user = this.clients.get(user_id);
 
-      const { initialAvailableOutgoingBitrate, minimumAvailableOutgoingBitrate } = mediasoupSettings.webRtcTransport;
+      const { initialAvailableOutgoingBitrate } = mediasoupSettings.webRtcTransport;
 
       const transport = await this.router.createWebRtcTransport({
         listenIps: mediasoupSettings.webRtcTransport.listenIps,
@@ -397,7 +408,6 @@ export class WssRoom {
         enableSctp: true,
         enableTcp: true,
         initialAvailableOutgoingBitrate,
-        minimumAvailableOutgoingBitrate,
         appData: { user_id, type: data.type },
       });
 
@@ -433,7 +443,7 @@ export class WssRoom {
    * @returns {Promise<object>} Promise<object>
    */
   private async connectWebRtcTransport(
-    data: { dtlsParameters: RTCDtlsParameters; type: TPeer },
+    data: { dtlsParameters: DtlsParameters; type: TPeer },
     user_id: string
   ): Promise<object> {
     try {
@@ -441,7 +451,7 @@ export class WssRoom {
 
       const user = this.clients.get(user_id);
 
-      let transport: TWebRtcTransport;
+      let transport: WebRtcTransport;
 
       switch (data.type) {
         case 'producer':
@@ -468,11 +478,11 @@ export class WssRoom {
 
   /**
    * Принимает стрим видео или аудио от пользователя.
-   * @param {object} data { rtpParameters: RTCRtpParameters; kind: TKind }
+   * @param {object} data { rtpParameters: RTCRtpParameters; kind: MediaKind }
    * @param {string} user_id автор сообщения
    * @returns {Promise<object>} Promise<object>
    */
-  private async produce(data: { rtpParameters: RTCRtpParameters; kind: TKind }, user_id: string): Promise<object> {
+  private async produce(data: { rtpParameters: RTCRtpParameters; kind: MediaKind }, user_id: string): Promise<object> {
     try {
       this.logger.info(`room ${this.session_id} produce - ${data.kind}`);
 
@@ -499,13 +509,15 @@ export class WssRoom {
       this.broadcast(user.io, 'mediaProduce', { user_id, kind: data.kind });
 
       if (data.kind === 'video') {
-        producer.on('videoorientationchange', (videoOrientation: object) => {
+        producer.on('videoorientationchange', (videoOrientation: ProducerVideoOrientation) => {
           this.broadcastAll('mediaVideoOrientationChange', { user_id, videoOrientation });
         });
       }
 
-      producer.on('score', (info: { score: number; ssrc: number; rid?: string }) => {
-        this.logger.info(`room ${this.session_id} user ${user_id} producer ${data.kind} score ${JSON.stringify(info)}`);
+      producer.on('score', (score: ProducerScore[]) => {
+        this.logger.info(
+          `room ${this.session_id} user ${user_id} producer ${data.kind} score ${JSON.stringify(score)}`
+        );
       });
 
       return {};
@@ -516,12 +528,12 @@ export class WssRoom {
 
   /**
    * Передает стрим видео или аудио от одного пользователя другому.
-   * @param {object} data { rtpCapabilities: RTCRtpCapabilities; user_id: string; kind: TKind }
+   * @param {object} data { rtpCapabilities: RTCRtpCapabilities; user_id: string; kind: MediaKind }
    * @param {string} user_id автор сообщения
    * @returns {Promise<object>} Promise<object>
    */
   private async consume(
-    data: { rtpCapabilities: RTCRtpCapabilities; user_id: string; kind: TKind },
+    data: { rtpCapabilities: RtpCapabilities; user_id: string; kind: MediaKind },
     user_id: string
   ): Promise<object> {
     try {
@@ -530,7 +542,7 @@ export class WssRoom {
       const user = this.clients.get(user_id);
       const target = this.clients.get(data.user_id);
 
-      let target_producer: IProducer;
+      let target_producer: Producer;
 
       switch (data.kind) {
         case 'video':
@@ -581,6 +593,7 @@ export class WssRoom {
           });
 
           consumer.on('producerclose', async () => {
+            user.io.emit('mediaProducerClose', { user_id: data.user_id, kind: data.kind });
             consumer.close();
             user.media.consumersVideo.delete(data.user_id);
           });
@@ -598,6 +611,7 @@ export class WssRoom {
           });
 
           consumer.on('producerclose', async () => {
+            user.io.emit('mediaProducerClose', { user_id: data.user_id, kind: data.kind });
             consumer.close();
             user.media.consumersAudio.delete(data.user_id);
           });
@@ -614,8 +628,16 @@ export class WssRoom {
         user.io.emit('mediaProducerResume', { user_id: data.user_id, kind: data.kind });
       });
 
-      consumer.on('score', (info: { score: number; producerScore: number }) => {
-        this.logger.info(`room ${this.session_id} user ${user_id} consumer ${data.kind} score ${JSON.stringify(info)}`);
+      consumer.on('score', (score: ConsumerScore[]) => {
+        this.logger.info(
+          `room ${this.session_id} user ${user_id} consumer ${data.kind} score ${JSON.stringify(score)}`
+        );
+      });
+
+      consumer.on('layerschange', (layers: ConsumerLayers | null) => {
+        this.logger.info(
+          `room ${this.session_id} user ${user_id} consumer ${data.kind} layerschange ${JSON.stringify(layers)}`
+        );
       });
 
       if (consumer.kind === 'video') {
@@ -648,7 +670,7 @@ export class WssRoom {
 
       const user = this.clients.get(user_id);
 
-      let transport: TWebRtcTransport;
+      let transport: WebRtcTransport;
 
       switch (data.type) {
         case 'producer':
@@ -683,7 +705,7 @@ export class WssRoom {
     try {
       const user = this.clients.get(user_id);
 
-      const consumer: IConsumer = user.media.consumersVideo.get(data.user_id);
+      const consumer: Consumer = user.media.consumersVideo.get(data.user_id);
 
       if (!consumer) {
         throw new Error(`Couldn't find video consumer with 'user_id'=${data.user_id} and 'room_id'=${this.session_id}`);
@@ -709,7 +731,7 @@ export class WssRoom {
 
       const user = this.clients.get(user_id);
 
-      let transport: TWebRtcTransport;
+      let transport: WebRtcTransport;
 
       switch (data.type) {
         case 'producer':
@@ -737,17 +759,17 @@ export class WssRoom {
   /**
    * Отдает инфу о стриме юзера
    * Замер происходит когда от юзера приходит стрим на сервер.
-   * @param {object} data { user_id: string; kind: TKind }
+   * @param {object} data { user_id: string; kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<object>} Promise<object>
    */
-  private async getProducerStats(data: { user_id: string; kind: TKind }, _user_id: string): Promise<object> {
+  private async getProducerStats(data: { user_id: string; kind: MediaKind }, _user_id: string): Promise<object> {
     try {
       this.logger.info(`room ${this.session_id} getProducerStats - ${data.kind}`);
 
       const target_user = this.clients.get(data.user_id);
 
-      let producer: IProducer;
+      let producer: Producer;
 
       switch (data.kind) {
         case 'video':
@@ -775,17 +797,17 @@ export class WssRoom {
   /**
    * Отдает инфу о стриме юзера на которого подписан текущий юзер
    * Замер происходит когда от того юзера передается стрим текущему юзеру.
-   * @param {object} data { user_id: string; kind: TKind }
+   * @param {object} data { user_id: string; kind: MediaKind }
    * @param {string} user_id автор сообщения
    * @returns {Promise<object>} Promise<object>
    */
-  private async getConsumerStats(data: { user_id: string; kind: TKind }, user_id: string): Promise<object> {
+  private async getConsumerStats(data: { user_id: string; kind: MediaKind }, user_id: string): Promise<object> {
     try {
       this.logger.info(`room ${this.session_id} getProducerStats - ${data.kind}`);
 
       const user = this.clients.get(user_id);
 
-      let consumer: IConsumer;
+      let consumer: Consumer;
 
       switch (data.kind) {
         case 'video':
@@ -838,16 +860,16 @@ export class WssRoom {
 
   /**
    * Остановить передачу стрима на сервер от пользователя.
-   * @param {object} data { user_id: string; kind: TKind }
+   * @param {object} data { user_id: string; kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<boolean>} promise<boolean>
    */
-  private async producerClose(data: { user_id: string; kind: TKind }, _user_id: string): Promise<boolean> {
+  private async producerClose(data: { user_id: string; kind: MediaKind }, _user_id: string): Promise<boolean> {
     try {
       const target_user = this.clients.get(data.user_id);
 
       if (target_user) {
-        let target_producer: IProducer;
+        let target_producer: Producer;
 
         switch (data.kind) {
           case 'video':
@@ -871,16 +893,16 @@ export class WssRoom {
 
   /**
    * Приостановить передачу стрима на сервер от пользователя.
-   * @param {object} data { user_id: string; kind: TKind }
+   * @param {object} data { user_id: string; kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<boolean>} promise<boolean>
    */
-  private async producerPause(data: { user_id: string; kind: TKind }, _user_id: string): Promise<boolean> {
+  private async producerPause(data: { user_id: string; kind: MediaKind }, _user_id: string): Promise<boolean> {
     try {
       const target_user = this.clients.get(data.user_id);
 
       if (target_user) {
-        let target_producer: IProducer;
+        let target_producer: Producer;
 
         switch (data.kind) {
           case 'video':
@@ -904,16 +926,16 @@ export class WssRoom {
 
   /**
    * Возобновить передачу стрима на сервер от пользователя.
-   * @param {object} data { user_id: string; kind: TKind }
+   * @param {object} data { user_id: string; kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<boolean>} promise<boolean>
    */
-  private async producerResume(data: { user_id: string; kind: TKind }, _user_id: string): Promise<boolean> {
+  private async producerResume(data: { user_id: string; kind: MediaKind }, _user_id: string): Promise<boolean> {
     try {
       const target_user = this.clients.get(data.user_id);
 
       if (target_user) {
-        let target_producer: IProducer;
+        let target_producer: Producer;
 
         switch (data.kind) {
           case 'video':
@@ -939,15 +961,15 @@ export class WssRoom {
 
   /**
    * Остановить передачу стрима на сервер от всех пользователей.
-   * @param {object} data { kind: TKind }
+   * @param {object} data { kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<boolean>} promise<boolean>
    */
-  private async allProducerClose(data: { kind: TKind }, _user_id: string): Promise<boolean> {
+  private async allProducerClose(data: { kind: MediaKind }, _user_id: string): Promise<boolean> {
     try {
       this.clients.forEach(async client => {
         if (client.media) {
-          let target_producer: IProducer;
+          let target_producer: Producer;
 
           switch (data.kind) {
             case 'video':
@@ -972,15 +994,15 @@ export class WssRoom {
 
   /**
    * Приостановить передачу стрима на сервер от всех пользователей.
-   * @param {object} data { kind: TKind }
+   * @param {object} data { kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<boolean>} promise<boolean>
    */
-  private async allProducerPause(data: { kind: TKind }, _user_id: string): Promise<boolean> {
+  private async allProducerPause(data: { kind: MediaKind }, _user_id: string): Promise<boolean> {
     try {
       this.clients.forEach(async client => {
         if (client.media) {
-          let target_producer: IProducer;
+          let target_producer: Producer;
 
           switch (data.kind) {
             case 'video':
@@ -1005,15 +1027,15 @@ export class WssRoom {
 
   /**
    * Возобновить передачу стрима на сервер от всех пользователей.
-   * @param {object} data { kind: TKind }
+   * @param {object} data { kind: MediaKind }
    * @param {string} _user_id автор сообщения
    * @returns {Promise<boolean>} promise<boolean>
    */
-  private async allProducerResume(data: { kind: TKind }, _user_id: string): Promise<boolean> {
+  private async allProducerResume(data: { kind: MediaKind }, _user_id: string): Promise<boolean> {
     try {
       this.clients.forEach(async client => {
         if (client.media) {
-          let target_producer: IProducer;
+          let target_producer: Producer;
 
           switch (data.kind) {
             case 'video':

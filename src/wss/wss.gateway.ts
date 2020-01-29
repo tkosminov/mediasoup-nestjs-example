@@ -9,8 +9,8 @@ import {
 import config from 'config';
 import io from 'socket.io';
 
-import mediasoup from 'mediasoup';
-import { IWorker } from 'mediasoup/Worker';
+import * as mediasoup from 'mediasoup';
+import Worker, { WorkerSettings } from 'mediasoup/lib/Worker';
 
 import { LoggerService } from '../logger/logger.service';
 
@@ -27,7 +27,7 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   public rooms: Map<string, WssRoom> = new Map();
 
-  public workers: { [index: number]: { clientsCount: number; roomsCount: number; pid: number; worker: IWorker } };
+  public workers: { [index: number]: { clientsCount: number; roomsCount: number; pid: number; worker: Worker } };
 
   constructor(private readonly logger: LoggerService) {
     this.createWorkers();
@@ -57,7 +57,7 @@ export class WssGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private async createWorkers(): Promise<void> {
     const promises = [];
     for (let i = 0; i < mediasoupSettings.workerPool; i++) {
-      promises.push(mediasoup.createWorker(mediasoupSettings.worker));
+      promises.push(mediasoup.createWorker(mediasoupSettings.worker as WorkerSettings));
     }
 
     this.workers = (await Promise.all(promises)).reduce((acc, worker, index) => {
